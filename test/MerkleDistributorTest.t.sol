@@ -38,11 +38,7 @@ contract MerkleDistributorTest is Test {
         distributor.setRoot(newRoot, newRound);
 
         // Assert that the Merkle root and round are updated
-        assertEq(
-            distributor.merkleRoot(),
-            newRoot,
-            "Merkle root should be updated"
-        );
+        assertEq(distributor.merkleRoot(), newRoot, "Merkle root should be updated");
         assertEq(distributor.round(), newRound, "Round should be updated");
     }
 
@@ -74,17 +70,10 @@ contract MerkleDistributorTest is Test {
         distributor.claim(round, account, amount, proof);
 
         // Assert that the reward was transferred
-        assertEq(
-            token.balanceOf(account),
-            amount,
-            "Account should receive the reward"
-        );
+        assertEq(token.balanceOf(account), amount, "Account should receive the reward");
 
         // Assert that the claim is marked as claimed
-        assertTrue(
-            distributor.isClaimed(round, account),
-            "Claim should be marked as claimed"
-        );
+        assertTrue(distributor.isClaimed(round, account), "Claim should be marked as claimed");
     }
 
     function test_preventDoubleClaim() public {
@@ -125,9 +114,7 @@ contract MerkleDistributorTest is Test {
         address account = address(0x123);
         uint64 round = 1;
         bytes32[] memory proof = new bytes32[](0);
-        bytes32 leaf = keccak256(
-            abi.encodePacked(account, rewardAmount, round)
-        );
+        bytes32 leaf = keccak256(abi.encodePacked(account, rewardAmount, round));
         merkleRoot = keccak256(abi.encodePacked(leaf));
         distributor.setRoot(merkleRoot, round);
 
@@ -155,9 +142,7 @@ contract MerkleDistributorTest is Test {
 
         // Assert that the tokens were transferred to the owner
         assertEq(
-            token.balanceOf(address(this)),
-            initialBalance + rescueAmount,
-            "Owner should receive the rescued tokens"
+            token.balanceOf(address(this)), initialBalance + rescueAmount, "Owner should receive the rescued tokens"
         );
     }
 
@@ -173,9 +158,7 @@ contract MerkleDistributorTest is Test {
         distributor.rescue(nonOwner, rescueAmount);
     }
 
-    function computeMerkleRoot(
-        bytes32[] memory leaves
-    ) internal pure returns (bytes32) {
+    function computeMerkleRoot(bytes32[] memory leaves) internal pure returns (bytes32) {
         require(leaves.length > 0, "NO_LEAVES");
 
         while (leaves.length > 1) {
@@ -183,9 +166,7 @@ contract MerkleDistributorTest is Test {
             bytes32[] memory newLeaves = new bytes32[](n);
 
             for (uint256 i = 0; i < leaves.length / 2; i++) {
-                newLeaves[i] = keccak256(
-                    abi.encodePacked(leaves[2 * i], leaves[2 * i + 1])
-                );
+                newLeaves[i] = keccak256(abi.encodePacked(leaves[2 * i], leaves[2 * i + 1]));
             }
 
             if (leaves.length % 2 == 1) {

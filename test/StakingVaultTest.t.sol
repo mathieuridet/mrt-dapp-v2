@@ -28,17 +28,9 @@ contract StakingVaultTest is Test {
 
     function test_stake() public {
         vault.stake(100e18);
-        assertEq(
-            vault.balanceOf(address(this)),
-            100e18,
-            "User balance should be 100 tokens"
-        );
+        assertEq(vault.balanceOf(address(this)), 100e18, "User balance should be 100 tokens");
 
-        assertEq(
-            vault.totalSupply(),
-            100e18,
-            "Total supply should be 100 tokens"
-        );
+        assertEq(vault.totalSupply(), 100e18, "Total supply should be 100 tokens");
     }
 
     function test_withdraw() public {
@@ -49,18 +41,10 @@ contract StakingVaultTest is Test {
         vault.withdraw(50e18);
 
         // Assert that the user's balance is updated
-        assertEq(
-            vault.balanceOf(address(this)),
-            50e18,
-            "User balance should be 50 tokens"
-        );
+        assertEq(vault.balanceOf(address(this)), 50e18, "User balance should be 50 tokens");
 
         // Assert that the total supply in the vault is updated
-        assertEq(
-            vault.totalSupply(),
-            50e18,
-            "Total supply should be 50 tokens"
-        );
+        assertEq(vault.totalSupply(), 50e18, "Total supply should be 50 tokens");
     }
 
     function test_getReward() public {
@@ -74,18 +58,10 @@ contract StakingVaultTest is Test {
         vault.getReward();
 
         // Assert that the user received 10 tokens as rewards (1 token per second * 10 seconds)
-        assertEq(
-            token.balanceOf(address(this)),
-            910e18,
-            "User should have 910 tokens (1000 - 100 staked + 10 rewards)"
-        );
+        assertEq(token.balanceOf(address(this)), 910e18, "User should have 910 tokens (1000 - 100 staked + 10 rewards)");
 
         // Assert that the rewards mapping is reset to 0
-        assertEq(
-            vault.rewards(address(this)),
-            0,
-            "Rewards should be reset to 0"
-        );
+        assertEq(vault.rewards(address(this)), 0, "Rewards should be reset to 0");
     }
 
     function test_exit() public {
@@ -105,11 +81,7 @@ contract StakingVaultTest is Test {
         assertEq(vault.totalSupply(), 0, "Total supply should be 0");
 
         // Assert that the user received their staked tokens and rewards
-        assertEq(
-            token.balanceOf(address(this)),
-            1010e18,
-            "User should have 1010 tokens (1000 + 10 rewards)"
-        );
+        assertEq(token.balanceOf(address(this)), 1010e18, "User should have 1010 tokens (1000 + 10 rewards)");
     }
 
     function test_setRewardRate() public {
@@ -117,11 +89,7 @@ contract StakingVaultTest is Test {
         vault.setRewardRate(2e18);
 
         // Assert that the reward rate is updated
-        assertEq(
-            vault.rewardRate(),
-            2e18,
-            "Reward rate should be updated to 2 tokens per second"
-        );
+        assertEq(vault.rewardRate(), 2e18, "Reward rate should be updated to 2 tokens per second");
     }
 
     function test_userRewardPerTokenPaidMapping() public {
@@ -170,11 +138,7 @@ contract StakingVaultTest is Test {
         vault.getReward();
 
         // Assert that the rewards mapping is reset to 0
-        assertEq(
-            vault.rewards(address(this)),
-            0,
-            "Rewards mapping should be reset to 0 after claiming rewards"
-        );
+        assertEq(vault.rewards(address(this)), 0, "Rewards mapping should be reset to 0 after claiming rewards");
     }
 
     function test_rescue() public {
@@ -185,27 +149,15 @@ contract StakingVaultTest is Test {
         unrelatedToken.mint(address(vault), 500e18);
 
         // Assert that the vault has the unrelated tokens
-        assertEq(
-            unrelatedToken.balanceOf(address(vault)),
-            500e18,
-            "Vault should have 500 unrelated tokens"
-        );
+        assertEq(unrelatedToken.balanceOf(address(vault)), 500e18, "Vault should have 500 unrelated tokens");
 
         // Rescue the unrelated tokens to the owner
         vault.rescue(unrelatedToken, address(this), 500e18);
 
         // Assert that the unrelated tokens were transferred to the owner
-        assertEq(
-            unrelatedToken.balanceOf(address(this)),
-            500e18,
-            "Owner should have 500 rescued tokens"
-        );
+        assertEq(unrelatedToken.balanceOf(address(this)), 500e18, "Owner should have 500 rescued tokens");
 
         // Assert that the vault no longer has the unrelated tokens
-        assertEq(
-            unrelatedToken.balanceOf(address(vault)),
-            0,
-            "Vault should have 0 unrelated tokens"
-        );
+        assertEq(unrelatedToken.balanceOf(address(vault)), 0, "Vault should have 0 unrelated tokens");
     }
 }

@@ -26,11 +26,7 @@ contract StakingVault is Ownable, ReentrancyGuard {
     event RewardPaid(address indexed user, uint256 reward);
     event RewardRateSet(uint256 rewardRate);
 
-    constructor(
-        address initialOwner,
-        IERC20 _token,
-        uint256 _rewardRate
-    ) Ownable(initialOwner) {
+    constructor(address initialOwner, IERC20 _token, uint256 _rewardRate) Ownable(initialOwner) {
         STAKING_TOKEN = _token;
         rewardRate = _rewardRate;
         lastUpdateTime = block.timestamp;
@@ -58,23 +54,15 @@ contract StakingVault is Ownable, ReentrancyGuard {
     }
 
     function earned(address account) public view returns (uint256) {
-        return
-            (balanceOf[account] *
-                (rewardPerToken() - userRewardPerTokenPaid[account])) /
-            1e18 +
-            rewards[account];
+        return (balanceOf[account] * (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18 + rewards[account];
     }
 
-    function setRewardRate(
-        uint256 _rate
-    ) external onlyOwner updateReward(address(0)) {
+    function setRewardRate(uint256 _rate) external onlyOwner updateReward(address(0)) {
         rewardRate = _rate;
         emit RewardRateSet(_rate);
     }
 
-    function stake(
-        uint256 amount
-    ) external nonReentrant updateReward(msg.sender) {
+    function stake(uint256 amount) external nonReentrant updateReward(msg.sender) {
         require(amount > 0, "AMOUNT_ZERO");
         totalSupply += amount;
         balanceOf[msg.sender] += amount;
@@ -82,9 +70,7 @@ contract StakingVault is Ownable, ReentrancyGuard {
         emit Staked(msg.sender, amount);
     }
 
-    function withdraw(
-        uint256 amount
-    ) public nonReentrant updateReward(msg.sender) {
+    function withdraw(uint256 amount) public nonReentrant updateReward(msg.sender) {
         require(amount > 0, "AMOUNT_ZERO");
         require(balanceOf[msg.sender] >= amount, "INSUFFICIENT_STAKE");
         totalSupply -= amount;
@@ -108,11 +94,7 @@ contract StakingVault is Ownable, ReentrancyGuard {
     }
 
     /// @notice owner can rescue unrelated tokens
-    function rescue(
-        IERC20 token,
-        address to,
-        uint256 amount
-    ) external onlyOwner {
+    function rescue(IERC20 token, address to, uint256 amount) external onlyOwner {
         require(token != STAKING_TOKEN, "NO_STAKING_TOKEN");
         token.safeTransfer(to, amount);
     }

@@ -19,11 +19,7 @@ contract MRTokenTest is Test {
         assertEq(token.symbol(), "MRT", "Token symbol should be MRT");
 
         // Assert that the initial supply is minted to the deployer
-        assertEq(
-            token.balanceOf(address(this)),
-            1000 * 10 ** 18,
-            "Initial supply should be 1000 tokens"
-        );
+        assertEq(token.balanceOf(address(this)), 1000 * 10 ** 18, "Initial supply should be 1000 tokens");
     }
 
     function test_mint() public {
@@ -32,18 +28,10 @@ contract MRTokenTest is Test {
         token.mint(recipient, 100 * 10 ** 18);
 
         // Assert that the recipient's balance is updated
-        assertEq(
-            token.balanceOf(recipient),
-            100 * 10 ** 18,
-            "Recipient should have 100 tokens"
-        );
+        assertEq(token.balanceOf(recipient), 100 * 10 ** 18, "Recipient should have 100 tokens");
 
         // Assert that the total supply is updated
-        assertEq(
-            token.totalSupply(),
-            1100 * 10 ** 18,
-            "Total supply should be 1100 tokens"
-        );
+        assertEq(token.totalSupply(), 1100 * 10 ** 18, "Total supply should be 1100 tokens");
     }
 
     function test_mintBeyondCap() public {
@@ -90,11 +78,7 @@ contract MRTokenTest is Test {
         token.mint(newOwner, 100 * 10 ** 18);
 
         // Assert that the new owner's balance is updated
-        assertEq(
-            token.balanceOf(newOwner),
-            100 * 10 ** 18,
-            "New owner should have 100 tokens"
-        );
+        assertEq(token.balanceOf(newOwner), 100 * 10 ** 18, "New owner should have 100 tokens");
     }
 
     function test_transfer() public {
@@ -106,17 +90,9 @@ contract MRTokenTest is Test {
         assertEq(result, true);
 
         // Assert that the sender's balance is reduced
-        assertEq(
-            token.balanceOf(address(this)),
-            900 * 10 ** 18,
-            "Sender should have 900 tokens"
-        );
+        assertEq(token.balanceOf(address(this)), 900 * 10 ** 18, "Sender should have 900 tokens");
 
         // Assert that the recipient's balance is increased
-        assertEq(
-            token.balanceOf(recipient),
-            100 * 10 ** 18,
-            "Recipient should have 100 tokens"
-        );
+        assertEq(token.balanceOf(recipient), 100 * 10 ** 18, "Recipient should have 100 tokens");
     }
 }

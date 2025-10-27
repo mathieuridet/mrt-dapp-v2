@@ -17,17 +17,9 @@ contract MerkleDistributor is Ownable {
     mapping(uint64 => mapping(address => bool)) private claimed;
 
     event RootUpdated(bytes32 indexed newRoot, uint64 indexed newRound);
-    event Claimed(
-        uint64 indexed round,
-        address indexed account,
-        uint256 amount
-    );
+    event Claimed(uint64 indexed round, address indexed account, uint256 amount);
 
-    constructor(
-        address initialOwner,
-        IERC20 _token,
-        uint256 _rewardAmount
-    ) Ownable(initialOwner) {
+    constructor(address initialOwner, IERC20 _token, uint256 _rewardAmount) Ownable(initialOwner) {
         TOKEN = _token;
         REWARD_AMOUNT = _rewardAmount;
     }
@@ -45,12 +37,7 @@ contract MerkleDistributor is Ownable {
         return claimed[r][a];
     }
 
-    function claim(
-        uint64 r,
-        address account,
-        uint256 amount,
-        bytes32[] calldata merkleProof
-    ) external {
+    function claim(uint64 r, address account, uint256 amount, bytes32[] calldata merkleProof) external {
         require(r == round, "WRONG_ROUND");
         require(amount == REWARD_AMOUNT, "AMOUNT");
         require(!claimed[r][account], "ALREADY_CLAIMED");

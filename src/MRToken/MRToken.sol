@@ -7,9 +7,7 @@ import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20P
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MRToken is ERC20, Ownable, ERC20Permit, ERC20Capped {
-    constructor(
-        address initialOwner
-    )
+    constructor(address initialOwner)
         ERC20("MRToken", "MRT")
         ERC20Permit("MRToken")
         Ownable(initialOwner)
@@ -18,11 +16,7 @@ contract MRToken is ERC20, Ownable, ERC20Permit, ERC20Capped {
         _mint(msg.sender, 1000 * 10 ** 18);
     }
 
-    function _update(
-        address from,
-        address to,
-        uint256 value
-    ) internal override(ERC20, ERC20Capped) {
+    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Capped) {
         super._update(from, to, value);
     }
 

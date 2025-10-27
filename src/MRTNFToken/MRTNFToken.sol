@@ -40,19 +40,14 @@ contract MRTNFToken is ERC721Royalty, Ownable, ReentrancyGuard, Pausable {
     }
 
     // Allow user to mint a token (pay exact amount)
-    function mint(
-        uint256 quantity
-    ) external payable whenNotPaused nonReentrant {
+    function mint(uint256 quantity) external payable whenNotPaused nonReentrant {
         require(quantity > 0, "QTY_ZERO");
         require(totalSupply() + quantity <= MAX_SUPPLY, "MAX_SUPPLY");
         uint256 cost = MINT_PRICE * quantity;
         require(msg.value >= cost, "INSUFFICIENT_ETH");
 
         // enforce cooldown
-        require(
-            block.timestamp >= lastMint[msg.sender] + MINT_INTERVAL,
-            "MINT_TOO_SOON"
-        );
+        require(block.timestamp >= lastMint[msg.sender] + MINT_INTERVAL, "MINT_TOO_SOON");
 
         for (uint256 i = 0; i < quantity; i++) {
             _safeMint(msg.sender, _nextId++);
@@ -63,7 +58,7 @@ contract MRTNFToken is ERC721Royalty, Ownable, ReentrancyGuard, Pausable {
 
         uint256 refund = msg.value - cost;
         if (refund > 0) {
-            (bool ok, ) = msg.sender.call{value: refund}("");
+            (bool ok,) = msg.sender.call{value: refund}("");
             if (!ok) {
                 // refund failed — do NOT revert
                 // the extra ETH remains in this contract; owner can withdraw later
@@ -77,10 +72,7 @@ contract MRTNFToken is ERC721Royalty, Ownable, ReentrancyGuard, Pausable {
     }
 
     // Allow owner to change the default royalty
-    function setDefaultRoyalty(
-        address receiver,
-        uint96 bps
-    ) external onlyOwner {
+    function setDefaultRoyalty(address receiver, uint96 bps) external onlyOwner {
         _setDefaultRoyalty(receiver, bps);
     }
 
@@ -91,7 +83,7 @@ contract MRTNFToken is ERC721Royalty, Ownable, ReentrancyGuard, Pausable {
 
     // Allow owner to withdraw
     function withdraw(address payable to) external onlyOwner {
-        (bool ok, ) = to.call{value: address(this).balance, gas: 30000}("");
+        (bool ok,) = to.call{value: address(this).balance, gas: 30000}("");
         require(ok, "WITHDRAW_FAILED");
     }
 
@@ -110,16 +102,12 @@ contract MRTNFToken is ERC721Royalty, Ownable, ReentrancyGuard, Pausable {
     }
 
     // Append ".json" to files names
-    function tokenURI(
-        uint256 tokenId
-    ) public view override returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
         return string.concat(super.tokenURI(tokenId), ".json");
     }
 
     // --- Interfaces ---
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC721Royalty) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721Royalty) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

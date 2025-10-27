@@ -21,14 +21,7 @@ contract MRTNFTokenTest is Test {
         user = address(0x123);
         vm.deal(user, USER_INITIAL_BALANCE);
 
-        nft = new MRTNFToken(
-            owner,
-            "ipfs://baseURI/",
-            MAX_SUPPLY,
-            MINT_PRICE,
-            address(this),
-            ROYALTY_BPS
-        );
+        nft = new MRTNFToken(owner, "ipfs://baseURI/", MAX_SUPPLY, MINT_PRICE, address(this), ROYALTY_BPS);
     }
 
     function test_mint() public {
@@ -76,11 +69,7 @@ contract MRTNFTokenTest is Test {
         nft.mint{value: 0.5 ether}(1); // Send 0.5 ether (excess)
 
         // Assert that the user received the refund
-        assertEq(
-            user.balance,
-            USER_INITIAL_BALANCE - MINT_PRICE,
-            "User should receive a refund"
-        );
+        assertEq(user.balance, USER_INITIAL_BALANCE - MINT_PRICE, "User should receive a refund");
 
         // Assert that the total supply is updated
         assertEq(nft.totalSupply(), 1, "Total supply should be 1");
@@ -101,11 +90,7 @@ contract MRTNFTokenTest is Test {
         nft.mint{value: MINT_PRICE}(1);
 
         // Assert that the total supply is equal to MAX_SUPPLY
-        assertEq(
-            nft.totalSupply(),
-            MAX_SUPPLY,
-            "Total supply should be MAX_SUPPLY"
-        );
+        assertEq(nft.totalSupply(), MAX_SUPPLY, "Total supply should be MAX_SUPPLY");
     }
 
     // Allow the test contract to receive ETH
@@ -129,11 +114,7 @@ contract MRTNFTokenTest is Test {
         nft.withdraw(payable(owner));
 
         // Assert that the owner's balance is updated
-        assertEq(
-            owner.balance,
-            initialOwnerBalance + 1 ether,
-            "Owner should receive the contract's balance"
-        );
+        assertEq(owner.balance, initialOwnerBalance + 1 ether, "Owner should receive the contract's balance");
 
         // Assert that the contract's balance is 0
         assertEq(address(nft).balance, 0, "Contract balance should be 0");
@@ -158,11 +139,7 @@ contract MRTNFTokenTest is Test {
         nft.mint{value: MINT_PRICE}(1);
 
         // Assert that the token URI is correct
-        assertEq(
-            nft.tokenURI(1),
-            "ipfs://newBaseURI/1.json",
-            "Token URI should match the new base URI"
-        );
+        assertEq(nft.tokenURI(1), "ipfs://newBaseURI/1.json", "Token URI should match the new base URI");
     }
 
     function test_manageRoyalties() public {
