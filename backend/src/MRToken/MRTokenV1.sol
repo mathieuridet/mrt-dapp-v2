@@ -49,7 +49,7 @@ contract MRTokenV1 is ERC20Upgradeable, ERC20CappedUpgradeable, ERC20PermitUpgra
         super._update(from, to, value);
     }
 
-    function version() external pure returns (uint256) {
+    function version() external pure virtual returns (uint256) {
         return 1;
     }
 }

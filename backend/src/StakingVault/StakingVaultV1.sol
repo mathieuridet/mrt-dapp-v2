@@ -3,14 +3,17 @@ pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {UUPSProxy} from "src/UUPSProxy.sol";
 
-/// @title StakingVault
+/// @title StakingVault V1
 /// @author Mathieu Ridet
 /// @notice Single-sided staking vault paying rewards in the same ERC20 token
 /// @dev Fund this contract with reward tokens and set rewardRate tokens/sec
-contract StakingVault is Ownable, ReentrancyGuard {
+contract StakingVaultV1 is Initializable, OwnableUpgradeable, ReentrancyGuard, UUPSUpgradeable {
     // Errors
     /// @notice Error thrown when amount is zero
     error StakingVault__AmountZero();
@@ -26,7 +29,7 @@ contract StakingVault is Ownable, ReentrancyGuard {
 
     // State variables
     /// @notice ERC20 token used for both staking and rewards
-    IERC20 public immutable STAKING_TOKEN;
+    IERC20 public immutable i_stakingToken;
 
     /// @notice Reward rate in tokens per second
     uint256 public rewardRate;
@@ -48,6 +51,9 @@ contract StakingVault is Ownable, ReentrancyGuard {
 
     /// @notice Mapping of user address to their pending rewards
     mapping(address => uint256) public rewards;
+
+    /// @notice Useful to add state variables in new versions of the contract
+    uint256[45] private __gap;
 
     // Events
     /// @notice Emitted when a user stakes tokens
@@ -79,11 +85,19 @@ contract StakingVault is Ownable, ReentrancyGuard {
 
     // Functions
     /// @notice Constructs the StakingVault contract
-    /// @param initialOwner Address that will own the contract
     /// @param _token ERC20 token used for staking and rewards
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor(IERC20 _token) ReentrancyGuard() {
+        _disableInitializers();
+        i_stakingToken = _token;
+    }
+
+    /// @notice Initializes the StakingVault contract
+    /// @param initialOwner Address that will own the contract
     /// @param _rewardRate Initial reward rate in tokens per second
-    constructor(address initialOwner, IERC20 _token, uint256 _rewardRate) Ownable(initialOwner) {
-        STAKING_TOKEN = _token;
+    function initialize(address initialOwner, uint256 _rewardRate) initializer public {
+        __Ownable_init(initialOwner);
+        // ReentrancyGuard doesn't need initialization in v5
         rewardRate = _rewardRate;
         lastUpdateTime = block.timestamp;
     }
@@ -101,7 +115,7 @@ contract StakingVault is Ownable, ReentrancyGuard {
         require(amount > 0, StakingVault__AmountZero());
         totalSupply += amount;
         balanceOf[msg.sender] += amount;
-        STAKING_TOKEN.safeTransferFrom(msg.sender, address(this), amount);
+        i_stakingToken.safeTransferFrom(msg.sender, address(this), amount);
         emit Staked(msg.sender, amount);
     }
 
@@ -112,7 +126,7 @@ contract StakingVault is Ownable, ReentrancyGuard {
         require(balanceOf[msg.sender] >= amount, StakingVault__InsufficientStake());
         totalSupply -= amount;
         balanceOf[msg.sender] -= amount;
-        STAKING_TOKEN.safeTransfer(msg.sender, amount);
+        i_stakingToken.safeTransfer(msg.sender, amount);
         emit Withdrawn(msg.sender, amount);
     }
 
@@ -121,7 +135,7 @@ contract StakingVault is Ownable, ReentrancyGuard {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            STAKING_TOKEN.safeTransfer(msg.sender, reward);
+            i_stakingToken.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -137,7 +151,7 @@ contract StakingVault is Ownable, ReentrancyGuard {
     /// @param to Address to receive the rescued tokens
     /// @param amount Amount of tokens to rescue
     function rescue(IERC20 token, address to, uint256 amount) external onlyOwner {
-        require(token != STAKING_TOKEN, StakingVault__NoStakingToken());
+        require(token != i_stakingToken, StakingVault__NoStakingToken());
         token.safeTransfer(to, amount);
     }
 
@@ -172,4 +186,15 @@ contract StakingVault is Ownable, ReentrancyGuard {
     function earned(address account) public view returns (uint256) {
         return (balanceOf[account] * (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18 + rewards[account];
     }
+
+    /// @notice Returns the version of this contract
+    /// @return Version number (1 for V1)
+    function version() external pure virtual returns (uint256) {
+        return 1;
+    }
+
+    /// @notice Authorizes upgrades (only owner)
+    /// @param _newImplementation Address of the new implementation
+    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
 }
+

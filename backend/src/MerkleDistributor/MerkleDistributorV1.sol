@@ -130,7 +130,7 @@ contract MerkleDistributorV1 is Initializable, OwnableUpgradeable, UUPSUpgradeab
         return claimed[r][a];
     }
 
-    function version() external pure returns (uint256) {
+    function version() external pure virtual returns (uint256) {
         return 1;
     }
 }

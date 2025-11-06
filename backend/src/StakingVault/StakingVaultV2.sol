@@ -2,25 +2,25 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {MerkleDistributorV1} from "./MerkleDistributorV1.sol";
+import {StakingVaultV1} from "./StakingVaultV1.sol";
 
-/// @title MerkleDistributor V2 (only for proxy testing)
+/// @title StakingVault V2
 /// @author Mathieu Ridet
-/// @notice One-time token claims for an allowlist using a Merkle root (upgraded version)
+/// @notice Single-sided staking vault paying rewards in the same ERC20 token (upgraded version)
 /// @dev Adds new storage variable for testing upgrades
-contract MerkleDistributorV2 is MerkleDistributorV1 {
+contract StakingVaultV2 is StakingVaultV1 {
     // State variables
+    /// @notice New storage variable added in V2 for testing
     uint8 public s_addStorageVarTest;
 
     /// @notice Useful to add state variables in new versions of the contract
-    uint256[49] private __gap;
+    uint256[44] private __gap;
 
     // Functions
-    /// @notice Constructs the MerkleDistributorV2 contract
-    /// @param _token ERC20 token to distribute
-    /// @param _rewardAmount Fixed reward amount per claim
+    /// @notice Constructs the StakingVaultV2 contract
+    /// @param _token ERC20 token used for staking and rewards
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(IERC20 _token, uint256 _rewardAmount) MerkleDistributorV1(_token, _rewardAmount) {}
+    constructor(IERC20 _token) StakingVaultV1(_token) {}
 
     /// @notice New initializer for upgrade v1 -> v2
     function initializeV2() public reinitializer(2) {
@@ -33,3 +33,4 @@ contract MerkleDistributorV2 is MerkleDistributorV1 {
         return 2;
     }
 }
+

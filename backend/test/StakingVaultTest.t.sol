@@ -2,11 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {StakingVault} from "../src/StakingVault/StakingVault.sol";
+import {StakingVaultV1} from "../src/StakingVault/StakingVaultV1.sol";
+import {UUPSProxy} from "../src/UUPSProxy.sol";
 import {MockERC20} from "./TestHelper.sol";
 
 contract StakingVaultTest is Test {
-    StakingVault public vault;
+    StakingVaultV1 public vault;
     MockERC20 public token;
     
     function setUp() public {
@@ -16,8 +17,13 @@ contract StakingVaultTest is Test {
         // Mint tokens to the test contract
         token.mint(address(this), 1_000e18);
 
-        // Deploy the StakingVault contract
-        vault = new StakingVault(address(this), token, 1e18); // 1 token per second reward rate
+        // Deploy the StakingVaultV1 implementation
+        StakingVaultV1 implementation = new StakingVaultV1(token);
+        
+        // Deploy proxy with StakingVaultV1 as implementation
+        bytes memory initData = abi.encodeCall(StakingVaultV1.initialize, (address(this), 1e18));
+        UUPSProxy proxy = new UUPSProxy(address(implementation), initData);
+        vault = StakingVaultV1(address(proxy));
 
         // Mint tokens to the vault for rewards
         token.mint(address(vault), 1_000e18);
