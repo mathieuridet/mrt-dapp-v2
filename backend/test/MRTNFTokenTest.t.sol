@@ -2,11 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {MRTNFToken} from "../src/MRTNFToken/MRTNFToken.sol";
+import {MRTNFTokenV1} from "../src/MRTNFToken/MRTNFTokenV1.sol";
+import {UUPSProxy} from "../src/UUPSProxy.sol";
 
 contract MRTNFTokenTest is Test {
     uint256 public constant USER_INITIAL_BALANCE = 1000 ether;
-    MRTNFToken nft;
+    MRTNFTokenV1 nft;
 
     address public owner;
     address public user;
@@ -20,7 +21,19 @@ contract MRTNFTokenTest is Test {
         user = address(0x123);
         vm.deal(user, USER_INITIAL_BALANCE);
 
-        nft = new MRTNFToken(owner, "ipfs://baseURI/", MAX_SUPPLY, MINT_PRICE, address(this), ROYALTY_BPS);
+        // Deploy the MRTNFTokenV1 implementation
+        MRTNFTokenV1 implementation = new MRTNFTokenV1(MAX_SUPPLY, MINT_PRICE);
+        
+        // Deploy proxy with MRTNFTokenV1 as implementation
+        bytes memory initData = abi.encodeCall(
+            MRTNFTokenV1.initialize,
+            (owner, "ipfs://baseURI/", address(this), ROYALTY_BPS)
+        );
+        UUPSProxy proxy = new UUPSProxy(address(implementation), initData);
+        nft = MRTNFTokenV1(address(proxy));
+        
+        // Enable sale (contract starts paused)
+        nft.setSaleActive(true);
     }
 
     function test_mint() public {
@@ -47,7 +60,7 @@ contract MRTNFTokenTest is Test {
 
         // Attempt to mint again before the cooldown period
         vm.prank(user);
-        vm.expectRevert(MRTNFToken.MRTNFToken__MintTooSoon.selector);
+        vm.expectRevert(MRTNFTokenV1.MRTNFToken__MintTooSoon.selector);
         nft.mint{value: MINT_PRICE}(1);
 
         // Fast forward time to exceed the cooldown period
@@ -85,7 +98,7 @@ contract MRTNFTokenTest is Test {
 
         // Attempt to mint more tokens
         vm.prank(user);
-        vm.expectRevert(MRTNFToken.MRTNFToken__MaxSupplyExceeded.selector);
+        vm.expectRevert(MRTNFTokenV1.MRTNFToken__MaxSupplyExceeded.selector);
         nft.mint{value: MINT_PRICE}(1);
 
         // Assert that the total supply is equal to MAX_SUPPLY

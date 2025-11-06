@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {ERC721Royalty} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import {ERC721RoyaltyUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {UUPSProxy} from "src/UUPSProxy.sol";
 
-/// @title MRTNFToken
+/// @title MRTNFToken V1
 /// @author Mathieu Ridet
 /// @notice ERC721 NFT token with minting, royalties, and cooldown protection
 /// @dev Implements sequential token ID minting with a minting cooldown period per address
-contract MRTNFToken is ERC721Royalty, Ownable, ReentrancyGuard, Pausable {
+contract MRTNFTokenV1 is Initializable, ERC721RoyaltyUpgradeable, OwnableUpgradeable, ReentrancyGuard, PausableUpgradeable, UUPSUpgradeable {
     /// @notice Error thrown when max supply is set to zero
     error MRTNFToken__MaxSupplyZero();
 
@@ -58,31 +61,42 @@ contract MRTNFToken is ERC721Royalty, Ownable, ReentrancyGuard, Pausable {
     /// @notice Next available token ID (starts at 1)
     uint256 private nextAvailableTokenId = 1;
 
+    /// @notice Useful to add state variables in new versions of the contract
+    uint256[45] private __gap;
+
     // Functions
     /// @notice Constructs the MRTNFToken contract
-    /// @param initialOwner Address that will own the contract
-    /// @param baseURI Base URI for token metadata
     /// @param maxSupply Maximum number of NFTs that can be minted
     /// @param mintPriceWei Price per NFT in wei
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor(uint256 maxSupply, uint256 mintPriceWei) ReentrancyGuard() {
+        _disableInitializers();
+        MAX_SUPPLY = maxSupply;
+        MINT_PRICE = mintPriceWei;
+    }
+
+    /// @notice Initializes the MRTNFToken contract
+    /// @param initialOwner Address that will own the contract
+    /// @param baseURI Base URI for token metadata
     /// @param royaltyReceiver Address that will receive royalty payments
     /// @param royaltyBps Royalty amount in basis points (1 basis point = 0.01%)
-    constructor(
+    function initialize(
         address initialOwner,
         string memory baseURI,
-        uint256 maxSupply,
-        uint256 mintPriceWei,
         address royaltyReceiver,
         uint96 royaltyBps
-    ) ERC721("MRTNFToken", "MRTNFT") Ownable(initialOwner) {
-        require(maxSupply > 0, MRTNFToken__MaxSupplyZero());
+    ) initializer public {
+        __ERC721_init("MRTNFToken", "MRTNFT");
+        __ERC721Royalty_init();
+        __Ownable_init(initialOwner);
+        __Pausable_init();
+
         require(bytes(baseURI).length > 0, MRTNFToken__BaseURIEmpty());
         require(royaltyReceiver != address(0), MRTNFToken__RoyaltyReceiverZero());
         require(royaltyBps > 0, MRTNFToken__RoyaltyBpsZero());
 
-        MAX_SUPPLY = maxSupply;
-        MINT_PRICE = mintPriceWei;
         baseTokenURI = baseURI;
-
+        nextAvailableTokenId = 1; // Initialize for upgradeable contract
         _setDefaultRoyalty(royaltyReceiver, royaltyBps);
     }
 
@@ -97,8 +111,10 @@ contract MRTNFToken is ERC721Royalty, Ownable, ReentrancyGuard, Pausable {
         uint256 cost = MINT_PRICE * quantity;
         require(msg.value >= cost, MRTNFToken__InsufficientETH());
 
-        // enforce cooldown
-        require(block.timestamp >= lastMint[msg.sender] + MINT_INTERVAL, MRTNFToken__MintTooSoon());
+        // enforce cooldown (allow first mint when lastMint is 0)
+        if (lastMint[msg.sender] > 0) {
+            require(block.timestamp >= lastMint[msg.sender] + MINT_INTERVAL, MRTNFToken__MintTooSoon());
+        }
 
         for (uint256 i = 0; i < quantity; i++) {
             uint256 tokenId = nextAvailableTokenId;
@@ -147,7 +163,12 @@ contract MRTNFToken is ERC721Royalty, Ownable, ReentrancyGuard, Pausable {
     /// @notice Pauses or unpauses minting
     /// @param active True to enable minting, false to pause
     function setSaleActive(bool active) external onlyOwner {
-        active ? _unpause() : _pause();
+        // Check pause state before calling _unpause or _pause to avoid reentrancy
+        if (active && paused()) {
+            _unpause();
+        } else if (!active && !paused()) {
+            _pause();
+        }
     }
 
     /// @notice Returns the base URI for token metadata
@@ -159,7 +180,11 @@ contract MRTNFToken is ERC721Royalty, Ownable, ReentrancyGuard, Pausable {
     /// @notice Returns the total number of tokens minted
     /// @return Total supply of tokens
     function totalSupply() public view returns (uint256) {
-        return nextAvailableTokenId - 1;
+        // nextAvailableTokenId starts at 1, so totalSupply = nextAvailableTokenId - 1
+        // Use unchecked to avoid underflow (nextAvailableTokenId should always be >= 1)
+        unchecked {
+            return nextAvailableTokenId - 1;
+        }
     }
 
     /// @notice Returns the URI for a given token ID, appending ".json" to the base URI
@@ -172,7 +197,18 @@ contract MRTNFToken is ERC721Royalty, Ownable, ReentrancyGuard, Pausable {
     /// @notice Checks if the contract supports a given interface
     /// @param interfaceId Interface ID to check
     /// @return True if the interface is supported
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721Royalty) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721RoyaltyUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
+
+    /// @notice Returns the version of this contract
+    /// @return Version number (1 for V1)
+    function version() external pure virtual returns (uint256) {
+        return 1;
+    }
+
+    /// @notice Authorizes upgrades (only owner)
+    /// @param _newImplementation Address of the new implementation
+    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
 }
+
