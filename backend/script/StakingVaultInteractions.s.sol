@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {UUPSProxy} from "src/UUPSProxy.sol";
@@ -13,7 +13,14 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 using Strings for uint256;
 
 contract DeployScript is Script {
-    function run() public {
+    struct DeployReturn {
+        address stakingVaultV1Impl;
+        address proxyAddress;
+        address tokenProxyAddress;
+        uint256 rewardRate;
+    }
+
+    function run() public returns (DeployReturn memory) {
         // Get deployer address
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
@@ -59,15 +66,30 @@ contract DeployScript is Script {
         require(currentRewardRate == rewardRate, "StakingVaultV1 rewardRate should match");
         
         vm.stopBroadcast();
+        
+        return DeployReturn({
+            stakingVaultV1Impl: address(stakingVaultV1),
+            proxyAddress: proxyAddress,
+            tokenProxyAddress: tokenProxyAddress,
+            rewardRate: rewardRate
+        });
     }
 }
 
 contract UpgradeScript is Script {
-    function run() public {
+    struct UpgradeReturn {
+        address stakingVaultV2Impl;
+        address proxyAddress;
+    }
+
+    function run() public returns (UpgradeReturn memory) {
+        return run(vm.envAddress("PROXY_ADDRESS"));
+    }
+
+    function run(address proxyAddress) public returns (UpgradeReturn memory) {
         // Get deployer address
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
-        address proxyAddress = vm.envAddress("PROXY_ADDRESS");
 
         console.log("Deployer:", deployer);
         console.log("Proxy Address:", proxyAddress);
@@ -115,6 +137,11 @@ contract UpgradeScript is Script {
         console.log("Final Implementation:", Upgrades.getImplementationAddress(proxyAddress));
         
         vm.stopBroadcast();
+        
+        return UpgradeReturn({
+            stakingVaultV2Impl: address(stakingVaultV2),
+            proxyAddress: proxyAddress
+        });
     }
 }
 

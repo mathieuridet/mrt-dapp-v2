@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {UUPSProxy} from "src/UUPSProxy.sol";
@@ -12,8 +12,14 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 using Strings for uint256;
 
 contract DeployScript is Script {
+    struct DeployReturn {
+        address merkleDistributorV1Impl;
+        address proxyAddress;
+        address mrtoken;
+        uint256 rewardAmount;
+    }
 
-    function run() public {
+    function run() public returns (DeployReturn memory) {
         // Get deployer address
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
@@ -47,17 +53,34 @@ contract DeployScript is Script {
                 Strings.toString(rewardAmount)
             ));        
         vm.stopBroadcast();
+        
+        return DeployReturn({
+            merkleDistributorV1Impl: address(merkleDistributor),
+            proxyAddress: proxyAddress,
+            mrtoken: address(mrtoken),
+            rewardAmount: rewardAmount
+        });
     }
 }
 
 contract UpgradeScript is Script {
-    function run() public {
+    struct UpgradeReturn {
+        address merkleDistributorV2Impl;
+        address proxyAddress;
+        uint256 rewardAmount;
+    }
+
+    function run() public returns (UpgradeReturn memory) {
+        return run(vm.envAddress("PROXY_ADDRESS"));
+    }
+
+    function run(address proxyAddress) public returns (UpgradeReturn memory) {
         // Get deployer address
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
-        address proxyAddress = vm.envAddress("PROXY_ADDRESS");
 
         console.log("Deployer:", deployer);
+        console.log("Proxy Address:", proxyAddress);
         
         vm.startBroadcast(deployerPrivateKey);
         
@@ -70,7 +93,10 @@ contract UpgradeScript is Script {
         
         // Step 5: Upgrade proxy to MerkleDistributorV2
         console.log("\n=== Upgrading Proxy to MerkleDistributorV2 ===");
-        MerkleDistributorV1(proxyAddress).upgradeToAndCall(address(merkleDistributorV2), "");
+        MerkleDistributorV1(proxyAddress).upgradeToAndCall(
+            address(merkleDistributorV2),
+            abi.encodeWithSelector(MerkleDistributorV2.initializeV2.selector)
+        );
 
         console.log("Proxy Address (should be same):", proxyAddress);
         console.log("New Implementation:", Upgrades.getImplementationAddress(proxyAddress));
@@ -90,5 +116,11 @@ contract UpgradeScript is Script {
         console.log("Final Implementation:", Upgrades.getImplementationAddress(proxyAddress));
         
         vm.stopBroadcast();
+        
+        return UpgradeReturn({
+            merkleDistributorV2Impl: address(merkleDistributorV2),
+            proxyAddress: proxyAddress,
+            rewardAmount: rewardAmount
+        });
     }
 }

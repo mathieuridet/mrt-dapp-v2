@@ -2,9 +2,9 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {StakingVaultV1} from "../src/StakingVault/StakingVaultV1.sol";
-import {UUPSProxy} from "../src/UUPSProxy.sol";
-import {MockERC20} from "./TestHelper.sol";
+import {StakingVaultV1} from "src/StakingVault/StakingVaultV1.sol";
+import {UUPSProxy} from "src/UUPSProxy.sol";
+import {MockERC20} from "../../TestHelper.sol";
 
 contract StakingVaultTest is Test {
     StakingVaultV1 public vault;

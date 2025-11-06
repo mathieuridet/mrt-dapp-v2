@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {UUPSProxy} from "src/UUPSProxy.sol";
@@ -11,7 +11,14 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 using Strings for uint256;
 
 contract DeployScript is Script {
-    function run() public {
+    struct DeployReturn {
+        address nftTokenV1Impl;
+        address proxyAddress;
+        uint256 maxSupply;
+        uint256 mintPrice;
+    }
+
+    function run() public returns (DeployReturn memory) {
         // Get deployer address
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
@@ -53,15 +60,30 @@ contract DeployScript is Script {
         require(maxSupplyValue == maxSupply, "MRTNFTokenV1 MAX_SUPPLY should match");
         
         vm.stopBroadcast();
+        
+        return DeployReturn({
+            nftTokenV1Impl: address(nftTokenV1),
+            proxyAddress: proxyAddress,
+            maxSupply: maxSupply,
+            mintPrice: mintPrice
+        });
     }
 }
 
 contract UpgradeScript is Script {
-    function run() public {
+    struct UpgradeReturn {
+        address nftTokenV2Impl;
+        address proxyAddress;
+    }
+
+    function run() public returns (UpgradeReturn memory) {
+        return run(vm.envAddress("PROXY_ADDRESS"));
+    }
+
+    function run(address proxyAddress) public returns (UpgradeReturn memory) {
         // Get deployer address
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
-        address proxyAddress = vm.envAddress("PROXY_ADDRESS");
 
         console.log("Deployer:", deployer);
         console.log("Proxy Address:", proxyAddress);
@@ -111,6 +133,11 @@ contract UpgradeScript is Script {
         console.log("Final Implementation:", Upgrades.getImplementationAddress(proxyAddress));
         
         vm.stopBroadcast();
+        
+        return UpgradeReturn({
+            nftTokenV2Impl: address(nftTokenV2),
+            proxyAddress: proxyAddress
+        });
     }
 }
 

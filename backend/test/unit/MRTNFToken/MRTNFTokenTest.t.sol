@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {MRTNFTokenV1} from "../src/MRTNFToken/MRTNFTokenV1.sol";
-import {UUPSProxy} from "../src/UUPSProxy.sol";
+import {MRTNFTokenV1} from "src/MRTNFToken/MRTNFTokenV1.sol";
+import {UUPSProxy} from "src/UUPSProxy.sol";
 
 contract MRTNFTokenTest is Test {
     uint256 public constant USER_INITIAL_BALANCE = 1000 ether;

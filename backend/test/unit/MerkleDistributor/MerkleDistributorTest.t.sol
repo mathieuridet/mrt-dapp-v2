@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {MerkleDistributorV1} from "src/MerkleDistributor/MerkleDistributorV1.sol";
-import {MockERC20} from "../TestHelper.sol";
+import {MockERC20} from "../../TestHelper.sol";
 import {UUPSProxy} from "src/UUPSProxy.sol";
 
 contract MerkleDistributorTest is Test {
