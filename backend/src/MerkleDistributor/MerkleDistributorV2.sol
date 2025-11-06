@@ -129,4 +129,8 @@ contract MerkleDistributorV2 is Initializable, OwnableUpgradeable, UUPSUpgradeab
     function isClaimed(uint64 r, address a) public view returns (bool) {
         return claimed[r][a];
     }
+
+    function version() external pure returns (uint256) {
+        return 2;
+    }
 }
