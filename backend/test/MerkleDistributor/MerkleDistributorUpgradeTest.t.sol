@@ -46,6 +46,9 @@ contract MerkleDistributorUpgradeTest is Test {
         MerkleDistributorV1 instance = MerkleDistributorV1(proxyAddress);
         assertEq(instance.i_rewardAmount(), 5);
         console.log("MerkleDistributorV1 i_rewardAmount:", instance.i_rewardAmount());
+
+        // Verify version is 1
+        assertEq(instance.version(), 1);
         
         // Upgrade to MerkleDistributorV2 as owner
         vm.prank(owner);
@@ -69,6 +72,9 @@ contract MerkleDistributorUpgradeTest is Test {
         assertEq(instanceB.i_rewardAmount(), 10);
         console.log("MerkleDistributorV2 i_rewardAmount:", instanceB.i_rewardAmount());
         assertEq(instanceB.s_addStorageVarTest(), 4);
+
+        // Verify version is 2
+        assertEq(instanceB.version(), 2);
     }
     
     function test_OnlyOwnerCanUpgrade() public {

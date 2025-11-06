@@ -39,6 +39,9 @@ contract MRTokenUpgradeTest is Test {
         (bool ok, ) = address(mrtokenV1).call(abi.encodeWithSignature("s_addStorageVarTest()"));
         assertFalse(ok, "Getter exists (variable likely public)");
 
+        // Verify version is 1
+        assertEq(MRTokenV1(proxyAddress).version(), 1);
+
         // Upgrade to MRTokenV2 as owner
         vm.prank(owner);
         MRTokenV2(proxyAddress).upgradeToAndCall(
@@ -59,6 +62,9 @@ contract MRTokenUpgradeTest is Test {
         // Verify s_addStorageVarTest exists on proxy (ie MRToken V2) and is 4
         MRTokenV2 instanceB = MRTokenV2(proxyAddress);
         assertEq(instanceB.s_addStorageVarTest(), 4);
+
+        // Verify version is 2
+        assertEq(instanceB.version(), 2);
     }
 
 }
