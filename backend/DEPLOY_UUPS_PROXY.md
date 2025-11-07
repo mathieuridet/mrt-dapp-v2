@@ -13,6 +13,7 @@ forge test --match-contract "UpgradesTest" -vvv
 ### 1. Start Anvil
 ```bash
 anvil
+anvil --fork-url $ETH_SEPOLIA_RPC_URL --chain-id 11155111
 ```
 
 ### 2. Deploy Script
@@ -22,6 +23,7 @@ export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f
 
 # Run the script
 forge script script/MRToken.s.sol:DeployScript --rpc-url http://localhost:8545 --broadcast -vvvv
+forge script script/DeployAll.s.sol:DeployAll --rpc-url http://127.0.0.1:8545 --broadcast -vvvv
 ```
 
 ### 3. Store proxy address
@@ -36,7 +38,7 @@ forge script script/MRToken.s.sol:UpgradeScript --rpc-url http://localhost:8545 
 
 # Interact with proxy
 ```bash
-cast call 0xa513e6e4b8f2a923d98304ec87f64353c4d5c853 "version()" --rpc-url http://127.0.0.1:8545
+cast call 0xfcc25e6d7ab3f9de86a32ddaab6d707ab5ce5a3c "rewardRate()" --rpc-url http://127.0.0.1:8545
 ```
 
 ## Testing on Sepolia (Testnet)

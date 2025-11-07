@@ -12,4 +12,13 @@ extra_output = ["storageLayout"]
 ffi = true
 ast = true
 
+[rpc_endpoints]
+ethereum = "${ETH_SEPOLIA_RPC_URL}"
+arbitrum = "${ARBITRUM_SEPOLIA_RPC_URL}"
+base = "${BASE_SEPOLIA_RPC_URL}"
+zksync = "${ZKSYNC_SEPOLIA_RPC_URL}"
+
+[etherscan]
+all_chains = { key = "${ETHERSCAN_API_KEY}" }
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

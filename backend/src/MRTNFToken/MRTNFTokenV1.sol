@@ -47,10 +47,10 @@ contract MRTNFTokenV1 is Initializable, ERC721RoyaltyUpgradeable, OwnableUpgrade
     uint256 public constant MINT_INTERVAL = 1 hours;
 
     /// @notice Maximum number of NFTs that can be minted
-    uint256 public immutable MAX_SUPPLY;
+    uint256 public immutable i_maxSupply;
 
     /// @notice Price per NFT in wei
-    uint256 public immutable MINT_PRICE;
+    uint256 public immutable i_mintPrice;
 
     /// @notice Base URI for token metadata (e.g., "ipfs://QmCID/")
     string private baseTokenURI;
@@ -71,8 +71,8 @@ contract MRTNFTokenV1 is Initializable, ERC721RoyaltyUpgradeable, OwnableUpgrade
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(uint256 maxSupply, uint256 mintPriceWei) ReentrancyGuard() {
         _disableInitializers();
-        MAX_SUPPLY = maxSupply;
-        MINT_PRICE = mintPriceWei;
+        i_maxSupply = maxSupply;
+        i_mintPrice = mintPriceWei;
     }
 
     /// @notice Initializes the MRTNFToken contract
@@ -106,9 +106,9 @@ contract MRTNFTokenV1 is Initializable, ERC721RoyaltyUpgradeable, OwnableUpgrade
     /// @dev Refunds excess ETH if more than required is sent
     function mint(uint256 quantity) external payable whenNotPaused nonReentrant {
         require(quantity > 0, MRTNFToken__QTYZero());
-        require(totalSupply() + quantity <= MAX_SUPPLY, MRTNFToken__MaxSupplyExceeded());
+        require(totalSupply() + quantity <= i_maxSupply, MRTNFToken__MaxSupplyExceeded());
 
-        uint256 cost = MINT_PRICE * quantity;
+        uint256 cost = i_mintPrice * quantity;
         require(msg.value >= cost, MRTNFToken__InsufficientETH());
 
         // enforce cooldown (allow first mint when lastMint is 0)
