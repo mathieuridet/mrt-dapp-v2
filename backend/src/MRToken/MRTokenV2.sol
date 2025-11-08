@@ -9,7 +9,6 @@ import {MRTokenV1} from "./MRTokenV1.sol";
 /// @dev Maximum supply is capped at 1,000,000 tokens
 contract MRTokenV2 is MRTokenV1 {
     // Storage variables
-    // solhint-disable-next-line mixed-case-variable
     uint8 public s_addStorageVarTest;
 
     /// @notice Useful to add state variables in new versions of the contract

@@ -8,8 +8,9 @@ import {MerkleDistributorV1} from "src/MerkleDistributor/MerkleDistributorV1.sol
 import {StakingVaultV1} from "src/StakingVault/StakingVaultV1.sol";
 import {MRTNFTokenV1} from "src/MRTNFToken/MRTNFTokenV1.sol";
 import {UUPSProxy} from "src/UUPSProxy.sol";
+import {PrivateKeyReader} from "script/utils/PrivateKeyReader.s.sol";
 
-contract DeployAll is Script, CodeConstants {
+contract DeployAll is PrivateKeyReader, CodeConstants {
     struct DeployAllReturn {
         address mrTokenProxyAddress;
         address merkleDistributorProxyAddress;
@@ -18,10 +19,9 @@ contract DeployAll is Script, CodeConstants {
     }
 
     function run() public returns (DeployAllReturn memory) {
-        uint256 pk = vm.envUint("PRIVATE_KEY");
-        address owner = vm.addr(pk);
+        (uint256 deployerPrivateKey, address owner) = readPrivateKey("PRIVATE_KEY");
 
-        vm.startBroadcast(pk);
+        vm.startBroadcast(deployerPrivateKey);
 
         address mrTokenProxyAddress;
         address merkleDistributorProxyAddress;

@@ -1,0 +1,26 @@
+/* --- Tailwind v3 directives --- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Your design tokens via CSS variables */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  /* If you set these from next/font, keep them */
+  --font-geist-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New";
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans);
+}

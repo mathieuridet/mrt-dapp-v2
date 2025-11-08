@@ -10,7 +10,6 @@ import {MRTNFTokenV1} from "./MRTNFTokenV1.sol";
 contract MRTNFTokenV2 is MRTNFTokenV1 {
     // State variables
     /// @notice New storage variable added in V2 for testing
-    // solhint-disable-next-line mixed-case-variable
     uint8 public s_addStorageVarTest;
 
     /// @notice Useful to add state variables in new versions of the contract

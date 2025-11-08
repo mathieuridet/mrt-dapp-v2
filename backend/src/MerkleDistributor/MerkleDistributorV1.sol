@@ -44,11 +44,9 @@ contract MerkleDistributorV1 is Initializable, OwnableUpgradeable, UUPSUpgradeab
     uint256 public immutable i_rewardAmount;
 
     /// @notice Current Merkle root for claim verification
-    // solhint-disable-next-line mixed-case-variable
     bytes32 public s_merkleRoot;
 
     /// @notice Current distribution round
-    // solhint-disable-next-line mixed-case-variable
     uint64 public s_round;
 
     /// @notice Mapping of round => address => claimed status

@@ -20,3 +20,19 @@ Solidity Contract Layout:
 // private
 // internal & private view & pure functions
 // external & public view & pure functions
+
+
+
+
+// Deployed on Ethereum Sepolia
+//  MRTokenV1: 0xF188DA467DC150F9FAd661b9102dB5d4676E86c6
+//  Proxy: 0x97035F4d00C5998a4f08d753c6d00b3a6BFcdCD3
+
+//  MerkleDistributorV1: 0x87c9e67A78210b8A81B348eD72A41F9417ae30f5
+//  Proxy: 0xB1189B60C224AD88C3d6330FdF39be866dE2D484
+
+//  StakingVaultV1: 0xba965016ee6d7BfFD482bbABF48E05d3e0ddD6e9
+//  Proxy: 0xc58D3891f4e328a8FFb3683551b7e6d3bE6FCE72
+
+//  MRTNFTokenV1: 0x69f978F1A444E876F2f724896cA9525dB396B7fE
+//  Proxy: 0x47EC23730C46F24578266888f9E4a8c41128E782
