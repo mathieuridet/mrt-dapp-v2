@@ -1,0 +1,74 @@
+name: Rebuild Merkle Root
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rebuild-merkle-root
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Timestamp (UTC)
+        run: |
+          echo "UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Call /api/rebuild (debug)
+        env:
+          API_URL: https://mrt-nft.vercel.app/api/rebuild
+          REBUILD_TOKEN: ${{ secrets.REBUILD_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "POST $API_URL"
+          curl -sS -X POST "$API_URL" \
+            -H "Authorization: Bearer $REBUILD_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{}' \
+            -D headers.txt \
+            -o api_response.json \
+            -w "HTTP %{http_code}\n" | tee status.txt
+
+          echo "::notice title=Rebuild status::$(cat status.txt)"
+          echo "::notice title=Response headers::$(cat headers.txt)"
+          echo "::notice title=API response::$(cat api_response.json)"
+
+          code=$(cut -d' ' -f2 < status.txt)
+          if [[ "$code" -ge 400 ]]; then
+            echo "Server returned HTTP $code"
+            exit 22
+          fi
+
+      - name: Download latest current.json from Blob
+        run: |
+          set -euo pipefail
+          echo "Fetching current.json from Blob..."
+          curl -sS https://1knr7tukuhrzgbyl.public.blob.vercel-storage.com/claims/current.json -o current.json
+          echo "::notice title=Blob current.json::$(cat current.json)"
+
+      - name: Extract publish params
+        id: merkle
+        run: |
+          set -euo pipefail
+          root=$(jq -r '.root' current.json)
+          round=$(jq -r '.round | tonumber' current.json)
+          claims=$(jq -r '.claims | length' current.json)
+
+          # Normalize null/empty root → 0x0
+          if [[ -z "$root" || "$root" == "null" ]]; then
+            root="0x0000000000000000000000000000000000000000000000000000000000000000"
+          fi
+
+          echo "Extracted values:"
+          echo "  root   = $root"
+          echo "  round  = $round"
+          echo "  claims = $claims"
+
+          echo "root=$root"           >> "$GITHUB_OUTPUT"
+          echo "round=$round"         >> "$GITHUB_OUTPUT"
+          echo "claims_count=$claims" >> "$GITHUB_OUTPUT"
