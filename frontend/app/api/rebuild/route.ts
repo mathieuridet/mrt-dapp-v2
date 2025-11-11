@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const res = await rebuildAndPush();
-    return NextResponse.json(res);
+    const results = await rebuildAndPush();
+    return NextResponse.json({ ok: true, results });
   } catch (e) {
     const message =
     e instanceof Error ? e.message :

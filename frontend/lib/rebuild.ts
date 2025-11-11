@@ -4,8 +4,10 @@ import { put } from "@vercel/blob";
 import { MerkleTree } from "merkletreejs";
 import keccak256 from "keccak256";
 import { ethers, JsonRpcProvider, Contract } from "ethers";
+import { CHAIN_CONFIGS, DEFAULT_CHAIN_ID } from "@/app/config/chains";
 
 type RebuildOptions = {
+  chainId?: number;
   rpcUrl?: string;
   nft?: `0x${string}`;
   distributor?: `0x${string}`;
@@ -25,6 +27,13 @@ type RebuildResult = {
   blobUrl?: string;
   localPath?: string;
   warn?: string[];
+};
+
+type RebuildBatchItem = {
+  chainId: number;
+  chainSlug: string;
+  label: string;
+  result: RebuildResult;
 };
 
 type Claim = {
@@ -91,32 +100,63 @@ async function getLogsInChunks(
   return logs;
 }
 
-export async function rebuildAndPush(opts: RebuildOptions = {}): Promise<RebuildResult> {
+async function rebuildSingleChain(opts: RebuildOptions = {}): Promise<RebuildBatchItem> {
   const warns: string[] = [];
 
-  const rpcUrl = opts.rpcUrl ?? process.env.NEXT_PUBLIC_ETH_SEP_RPC_URL ?? "";
-  const nft = (opts.nft ?? process.env.NEXT_PUBLIC_ETH_SEP_NFT_ADDRESS) as `0x${string}`;
-  const distributor = (opts.distributor ?? process.env.NEXT_PUBLIC_ETH_SEP_DISTRIBUTOR_ADDRESS) as `0x${string}`;
+  const targetChainId = opts.chainId ?? DEFAULT_CHAIN_ID;
+  const chainConfig = CHAIN_CONFIGS[targetChainId] ?? CHAIN_CONFIGS[DEFAULT_CHAIN_ID];
+  const resolvedChainId = chainConfig.id;
+  const chainSlug = chainConfig.alchemyNetwork || `chain-${chainConfig.id}`;
+
+  const wrap = (result: RebuildResult): RebuildBatchItem => ({
+    chainId: resolvedChainId,
+    chainSlug,
+    label: chainConfig.label,
+    result,
+  });
+
+  const rpcUrl = opts.rpcUrl ?? chainConfig.rpcUrl ?? "";
+  const nft = opts.nft ?? chainConfig.contracts.nft;
+  const distributor = opts.distributor ?? chainConfig.contracts.distributor;
   const blocksPerHour = opts.blocksPerHour ?? Number(process.env.BLOCKS_PER_HOUR ?? 300);
-  const outPath = opts.outPath ?? path.join(process.cwd(), "public", "claims", "current.json");
-  const blobKey = opts.blobKey ?? "claims/current.json";
+  const outPath = opts.outPath ?? path.join(process.cwd(), "public", "claims", `${chainSlug}.json`);
+  const blobKey = opts.blobKey ?? `claims/${chainSlug}.json`;
 
   if (!rpcUrl || !nft || !distributor) {
-    return { ok: false, updated: false, count: 0, round: 0, fileRoot: ZERO32, warn: ["Missing RPC/NFT/DISTRIBUTOR env"] };
+    return wrap({
+      ok: false,
+      updated: false,
+      count: 0,
+      round: 0,
+      fileRoot: ZERO32,
+      warn: [
+        `Missing RPC/NFT/DISTRIBUTOR configuration for ${chainConfig.label}.`,
+      ],
+    });
   }
 
   const provider = new JsonRpcProvider(rpcUrl);
-  const code = await provider.getCode(distributor);
+  const distributorAddress = distributor as `0x${string}`;
+  const nftAddress = nft as `0x${string}`;
+
+  const code = await provider.getCode(distributorAddress);
   if (code === "0x") {
-    return { ok: false, updated: false, count: 0, round: 0, fileRoot: ZERO32, warn: [`No contract bytecode at ${distributor}`] };
+    return wrap({
+      ok: false,
+      updated: false,
+      count: 0,
+      round: 0,
+      fileRoot: ZERO32,
+      warn: [`No contract bytecode at ${distributorAddress}`],
+    });
   }
 
-  const dist = new Contract(distributor, DIST_ABI, provider);
-  const [onchainRoot, onchainRound, onchainReward] = await Promise.all([
+  const dist = new Contract(distributorAddress, DIST_ABI, provider);
+  const [onchainRoot, onchainRound, onchainReward] = (await Promise.all([
     dist.merkleRoot(),
     dist.round(),
     dist.rewardAmount(),
-  ]) as [`0x${string}`, bigint, bigint];
+  ])) as [`0x${string}`, bigint, bigint];
 
   let rewardAmount = onchainReward;
   if (rewardAmount === 0n) {
@@ -127,7 +167,7 @@ export async function rebuildAndPush(opts: RebuildOptions = {}): Promise<Rebuild
 
   const toBlock = await provider.getBlockNumber();
   const fromBlock = Math.max(0, toBlock - blocksPerHour);
-  const logs = await getLogsInChunks(provider, nft, fromBlock, toBlock, [TRANSFER_SIG, ZERO32]);
+  const logs = await getLogsInChunks(provider, nftAddress, fromBlock, toBlock, [TRANSFER_SIG, ZERO32]);
 
   const minters = new Set<string>();
   for (const log of logs) {
@@ -189,7 +229,7 @@ export async function rebuildAndPush(opts: RebuildOptions = {}): Promise<Rebuild
     current.root.toLowerCase() === fileRoot.toLowerCase() &&
     current.round === Number(round)
   ) {
-    return {
+    return wrap({
       ok: true,
       updated: false,
       reason: addresses.length === 0 ? "empty" : "unchanged",
@@ -200,7 +240,7 @@ export async function rebuildAndPush(opts: RebuildOptions = {}): Promise<Rebuild
       blobUrl: `https://${blobReadHost}/${blobKey}`,
       localPath,
       warn: warns.length ? warns : undefined,
-    };
+    });
   }
 
   let reason: "empty" | "unchanged" | "pushed" = "unchanged";
@@ -226,7 +266,7 @@ export async function rebuildAndPush(opts: RebuildOptions = {}): Promise<Rebuild
   if (needUpdate && process.env.PUBLISHER_PRIVATE_KEY) {
     try {
       const wallet = new ethers.Wallet(process.env.PUBLISHER_PRIVATE_KEY, provider);
-      const distWithSigner = new Contract(distributor, DIST_ABI, wallet);
+      const distWithSigner = new Contract(distributorAddress, DIST_ABI, wallet);
       const tx = await distWithSigner.setRoot(fileRoot, round);
       const receipt = await tx.wait();
       txHash = receipt.transactionHash;
@@ -237,7 +277,7 @@ export async function rebuildAndPush(opts: RebuildOptions = {}): Promise<Rebuild
     warns.push("setRoot needed but no PUBLISHER_PRIVATE_KEY provided — skipping on-chain update");
   }
 
-  return {
+  return wrap({
     ok: true,
     updated: needUpdate,
     reason: addresses.length === 0 ? "empty" : reason,
@@ -249,5 +289,17 @@ export async function rebuildAndPush(opts: RebuildOptions = {}): Promise<Rebuild
     localPath,
     warn: warns.length ? warns : undefined,
     ...(txHash ? { txHash } : {}),
-  };
+  });
+}
+
+export async function rebuildAndPush(): Promise<RebuildBatchItem[]> {
+  const entries = Object.values(CHAIN_CONFIGS);
+  const results: RebuildBatchItem[] = [];
+
+  for (const config of entries) {
+    const result = await rebuildSingleChain({ chainId: config.id });
+    results.push(result);
+  }
+
+  return results;
 }
