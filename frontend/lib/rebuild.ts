@@ -94,9 +94,9 @@ async function getLogsInChunks(
 export async function rebuildAndPush(opts: RebuildOptions = {}): Promise<RebuildResult> {
   const warns: string[] = [];
 
-  const rpcUrl = opts.rpcUrl ?? process.env.NEXT_PUBLIC_RPC_URL ?? "";
-  const nft = (opts.nft ?? process.env.NEXT_PUBLIC_NFT_ADDRESS) as `0x${string}`;
-  const distributor = (opts.distributor ?? process.env.NEXT_PUBLIC_DISTRIBUTOR_ADDRESS) as `0x${string}`;
+  const rpcUrl = opts.rpcUrl ?? process.env.NEXT_PUBLIC_ETH_SEP_RPC_URL ?? "";
+  const nft = (opts.nft ?? process.env.NEXT_PUBLIC_ETH_SEP_NFT_ADDRESS) as `0x${string}`;
+  const distributor = (opts.distributor ?? process.env.NEXT_PUBLIC_ETH_SEP_DISTRIBUTOR_ADDRESS) as `0x${string}`;
   const blocksPerHour = opts.blocksPerHour ?? Number(process.env.BLOCKS_PER_HOUR ?? 300);
   const outPath = opts.outPath ?? path.join(process.cwd(), "public", "claims", "current.json");
   const blobKey = opts.blobKey ?? "claims/current.json";
