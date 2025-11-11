@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useChainId } from "wagmi";
-import type { Abi } from "viem";
-import abi from "../../abi/MRTNFToken.json";
+import { formatUnits, type Abi } from "viem";
+import MRTNFToken from "../../abi/MRTNFToken.json";
 import NFTGrid from "../components/NFTGrid";
 import { EmptyState } from "@/app/components/Helpers";
 import { getChainConfig } from "@/app/config/chains";
 
-const nftAbi = abi as unknown as Abi;
+const nftAbi = MRTNFToken.abi as unknown as Abi;
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
 
 export default function Page() {
@@ -28,15 +28,21 @@ export default function Page() {
   const { data: price } = useReadContract({
     address: nftContract,
     abi: nftAbi,
-    functionName: "mintPrice",
+    functionName: "i_mintPrice",
     query: { enabled: isConfigured },
   });
-  const { data: max } = useReadContract({
+  const {
+    data: max,
+    error,
+    isLoading,
+    isError,
+  } = useReadContract({
     address: nftContract,
     abi: nftAbi,
-    functionName: "MAX_SUPPLY",
+    functionName: "i_maxSupply",
     query: { enabled: isConfigured },
   });
+    
   const { data: supply } = useReadContract({
     address: nftContract,
     abi: nftAbi,
@@ -74,7 +80,7 @@ export default function Page() {
   });
   const mintInterval = mintIntervalRaw ? Number(mintIntervalRaw) : 0;
   const canMint = !lastMintTs || (Date.now() / 1000 - lastMintTs) >= mintInterval;
-  
+
   useEffect(() => {
     if (isSuccess) {
       refetchBalance();
@@ -94,6 +100,9 @@ export default function Page() {
 
   const cost = useMemo(() => (mintPrice * BigInt(qty)).toString(), [mintPrice, qty]);
 
+  const supplyDisplay = isConfigured && supply != null ? supply.toString() : "-";
+  const maxDisplay = isConfigured && typeof max === "bigint" ? formatUnits(max, 18) : "-";
+
   async function onMint() {
     if (!isConfigured) return;
     await writeContractAsync({
@@ -104,6 +113,8 @@ export default function Page() {
       value: BigInt(cost),
     });
   }
+
+
 
   return (
     <div className="min-h-screen bg-black text-zinc-200 py-10 px-4">
@@ -130,7 +141,7 @@ export default function Page() {
               </p>
               <p>
                 <span className="text-zinc-400">Supply:</span>{" "}
-                {isConfigured ? (supply ?? "-").toString() : "-"} / {isConfigured ? (max ?? "-").toString() : "-"}
+                {supplyDisplay} / {maxDisplay}
               </p>
               <p>
                 <span className="text-zinc-400">Price:</span>{" "}
