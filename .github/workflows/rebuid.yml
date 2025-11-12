@@ -20,7 +20,8 @@ jobs:
 
     steps:
       - name: Timestamp (UTC)
-        run: echo "UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        run: |
+          echo "UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
       - name: Call /api/rebuild (debug)
         env:
