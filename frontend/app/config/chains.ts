@@ -52,7 +52,7 @@ export const CHAIN_CONFIGS: Record<number, ChainConfig> = {
       claimsUrl: ETH_SEP_CLAIMS_URL,
     },
   },
-  [arbitrumSepolia.id]: {
+  /*[arbitrumSepolia.id]: {
     id: arbitrumSepolia.id,
     label: "Arbitrum Sepolia",
     wagmi: arbitrumSepolia,
@@ -93,7 +93,7 @@ export const CHAIN_CONFIGS: Record<number, ChainConfig> = {
       token: envAddress(process.env.NEXT_PUBLIC_ZKS_SEP_TOKEN_ADDRESS),
       claimsUrl: ZKS_SEP_CLAIMS_URL,
     },
-  },
+  },*/
 };
 
 export const CHAIN_LIST = Object.values(CHAIN_CONFIGS);
