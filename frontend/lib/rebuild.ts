@@ -229,9 +229,15 @@ async function rebuildSingleChain(opts: RebuildOptions = {}): Promise<RebuildBat
   const logs = await getLogsInChunks(provider, nftAddress, fromBlock, toBlock, [TRANSFER_SIG, ZERO32]);
   console.log("[builder] logs.length", logs.length);
   if (logs.length) {
-    const peek = logs[0];
+    const peek: any = logs[0];
+    const bnRaw = peek.blockNumber;
+    const bn =
+      typeof bnRaw === "string" ? parseInt(bnRaw, 16)
+      : typeof bnRaw === "bigint" ? Number(bnRaw)
+      : Number(bnRaw ?? 0);
+  
     console.log("[builder] firstLog", {
-      blockNumber: parseInt(peek.blockNumber, 16),
+      blockNumber: bn,
       txHash: peek.transactionHash,
       topics: peek.topics,
     });
