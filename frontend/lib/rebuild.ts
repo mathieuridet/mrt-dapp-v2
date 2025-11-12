@@ -5,6 +5,7 @@ import { MerkleTree } from "merkletreejs";
 import keccak256 from "keccak256";
 import { ethers, JsonRpcProvider, Contract } from "ethers";
 import { CHAIN_CONFIGS, DEFAULT_CHAIN_ID } from "@/app/config/chains";
+import DistributorArtifact from "@/abi/MerkleDistributor.json";
 
 type RebuildOptions = {
   chainId?: number;
@@ -50,17 +51,10 @@ type ProofsPayload = {
 
 type Hex32 = `0x${string}`;
 
-const DIST_ABI = [
-  "function token() view returns (address)",
-  "function merkleRoot() view returns (bytes32)",
-  "function round() view returns (uint64)",
-  "function rewardAmount() view returns (uint256)",
-  "function setRoot(bytes32 newRoot, uint64 newRound) external",
-] as const;
-
 const TRANSFER_SIG = ethers.id("Transfer(address,address,uint256)");
 const ZERO32: Hex32 = ("0x" + "0".repeat(64)) as Hex32;
 const DUMMY_ROOT: Hex32 = ethers.keccak256(ethers.toUtf8Bytes("empty")) as Hex32;
+const DIST_ABI = DistributorArtifact.abi;
 
 function leafHash(account: `0x${string}`, amount: bigint, round: bigint) {
   return ethers.keccak256(
@@ -162,7 +156,7 @@ async function rebuildSingleChain(opts: RebuildOptions = {}): Promise<RebuildBat
     console.log("*** merkleRoot", dist.merkleRoot());
     console.log("*** round", dist.round());
     console.log("*** rewardAmount", dist.rewardAmount());
-    
+
     [onchainRoot, onchainRound, onchainReward] = (await Promise.all([
       dist.merkleRoot(),
       dist.round(),
