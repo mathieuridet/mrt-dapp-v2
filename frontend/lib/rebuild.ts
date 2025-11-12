@@ -152,12 +152,31 @@ async function rebuildSingleChain(opts: RebuildOptions = {}): Promise<RebuildBat
   }
 
   const dist = new Contract(distributorAddress, DIST_ABI, provider);
-  const [onchainRoot, onchainRound, onchainReward] = (await Promise.all([
-    dist.merkleRoot(),
-    dist.round(),
-    dist.rewardAmount(),
-  ])) as [`0x${string}`, bigint, bigint];
 
+  let onchainRoot: `0x${string}` | undefined;
+  let onchainRound: bigint | undefined;
+  let onchainReward: bigint | undefined;
+  try {
+    console.log("dist", distributorAddress);
+  
+    [onchainRoot, onchainRound, onchainReward] = (await Promise.all([
+      dist.merkleRoot(),
+      dist.round(),
+      dist.rewardAmount(),
+    ])) as [`0x${string}`, bigint, bigint];
+  
+    console.log("*** onchainRoot", onchainRoot);
+    console.log("*** onchainRound", onchainRound?.toString());
+    console.log("*** onchainReward", onchainReward?.toString());
+  
+  } catch (err) {
+    console.error("Error reading distributor state", {
+      distributorAddress,
+      error: err,
+    });
+    throw err;
+  }
+  
   let rewardAmount = onchainReward;
   if (rewardAmount === 0n) {
     const fallback = ethers.parseUnits(process.env.REWARD_AMOUNT || "5", 18);
