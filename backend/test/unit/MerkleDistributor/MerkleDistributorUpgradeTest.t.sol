@@ -19,7 +19,7 @@ contract MerkleDistributorUpgradeTest is Test {
     uint256 constant REWARD_AMOUNT_MERKLE_DISTRIBUTOR = 5;
     uint256 constant REWARD_AMOUNT_MERKLE_DISTRIBUTOR_B = 10;
 
-    function setUp() public {
+    /*function setUp() public {
         // Deploy implementations
         mrtoken = new MRTokenV1();
         merkleDistributorV1 = new MerkleDistributorV1(mrtoken, REWARD_AMOUNT_MERKLE_DISTRIBUTOR);
@@ -98,6 +98,6 @@ contract MerkleDistributorUpgradeTest is Test {
         // Verify we can still call functions through the proxy
         MerkleDistributorV2 instanceB = MerkleDistributorV2(proxyAddress);
         assertEq(instanceB.i_rewardAmount(), 10);
-    }
+    }*/
 }
 

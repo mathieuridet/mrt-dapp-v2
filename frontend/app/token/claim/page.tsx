@@ -89,7 +89,7 @@ export default function ClaimPage() {
     if (!claimsUrl) return;
     (async () => {
       try {
-        const url = `${claimsUrl}?v=${Date.now()}`;
+        const url = `${claimsUrl}`;
         console.log("[claim] fetching file:", url);
         const r = await fetch(url, { cache: "no-store" });
         if (!r.ok) {
@@ -117,7 +117,7 @@ export default function ClaimPage() {
   const { data: onchainRoot } = useReadContract({
     address: distributor,
     abi: distributorAbi,
-    functionName: "merkleRoot",
+    functionName: "s_merkleRoot",
     query: { enabled: isConfigured },
   });
   const { data: isClaimed, refetch: refetchIsClaimed } = useReadContract({
@@ -130,7 +130,10 @@ export default function ClaimPage() {
 
   const tokenDecimals = decimals != null ? Number(decimals) : 18;
   const pretty = entry ? fmtAmount(entry.amount, tokenDecimals) : null;
+  console.log(entry?.amount)
+console.log( "pretty", pretty);
 
+        
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: waiting, isSuccess } = useWaitForTransactionReceipt({ hash });
 
@@ -149,8 +152,8 @@ export default function ClaimPage() {
     writeContract({
       address: distributor,
       abi: distributorAbi,
-      functionName: "claim",
-      args: [BigInt(proofs.round), address as `0x${string}`, BigInt(entry.amount), entry.proof] as const,
+      functionName: "claimV2",
+      args: [BigInt(proofs.round), address as `0x${string}`, entry.proof] as const,
     });
   }
 

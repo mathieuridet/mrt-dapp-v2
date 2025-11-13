@@ -18,7 +18,7 @@ contract DeployScript is Script {
 
     function run() public returns (DeployReturn memory) {
         // Get deployer address
-        string memory deployerPrivateKey = vm.envString("PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
         
         console.log("Deployer:", deployer);
@@ -74,7 +74,7 @@ contract UpgradeScript is Script {
 
     function run(address proxyAddress) public returns (UpgradeReturn memory) {
         // Get deployer address
-        string memory deployerPrivateKey = vm.envString("PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
 
         console.log("Deployer:", deployer);

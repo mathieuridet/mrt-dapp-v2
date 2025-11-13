@@ -2,34 +2,57 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {MerkleDistributorV1} from "./MerkleDistributorV1.sol";
 
-/// @title MerkleDistributor V2 (only for proxy testing)
-/// @author Mathieu Ridet
-/// @notice One-time token claims for an allowlist using a Merkle root (upgraded version)
-/// @dev Adds new storage variable for testing upgrades
 contract MerkleDistributorV2 is MerkleDistributorV1 {
-    // State variables
-    uint8 public s_addStorageVarTest;
+    // Dummy ctor ONLY to satisfy V1's non-empty constructor; NOT executed via proxy.
+    constructor() MerkleDistributorV1(IERC20(address(0)), 0) {}
 
-    /// @notice Useful to add state variables in new versions of the contract
-    uint256[49] private __gap;
+    // New mutable reward (0 => fallback to immutable i_rewardAmount)
+    uint256 private s_rewardAmount;
 
-    // Functions
-    /// @notice Constructs the MerkleDistributorV2 contract
-    /// @param _token ERC20 token to distribute
-    /// @param _rewardAmount Fixed reward amount per claim
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(IERC20 _token, uint256 _rewardAmount) MerkleDistributorV1(_token, _rewardAmount) {}
+    // Separate claimed map for V2 path (since V1.claimed is private)
+    mapping(uint64 => mapping(address => bool)) private s_claimedV2;
 
-    /// @notice New initializer for upgrade v1 -> v2
-    function initializeV2() public reinitializer(2) {
-        s_addStorageVarTest = 4;
+    event RewardAmountUpdated(uint256 newAmount);
+
+    function version() external pure override returns (uint256) { return 2; }
+
+    function setRewardAmount(uint256 newAmount) external onlyOwner {
+        s_rewardAmount = newAmount;
+        emit RewardAmountUpdated(newAmount);
     }
 
-    /// @notice Returns the version of this contract
-    /// @return Version number (2 for V2)
-    function version() external pure override returns (uint256) {
-        return 2;
+    /// Effective reward used by V2 (prefers mutable, falls back to immutable)
+    function rewardAmount() public view returns (uint256) {
+        uint256 m = s_rewardAmount;
+        return m != 0 ? m : i_rewardAmount;
+    }
+
+    /// @notice New claim entrypoint that uses the mutable reward.
+    /// @dev amount is derived, not user-provided; proof is built over (account, amount, r)
+    function claimV2(
+        uint64 r,
+        address account,
+        bytes32[] calldata merkleProof
+    ) external {
+        require(r == s_round, MerkleDistributor__WrongRound());
+        require(!s_claimedV2[r][account], MerkleDistributor__AlreadyClaimed());
+
+        uint256 amount = rewardAmount();
+
+        bytes32 leaf = keccak256(abi.encodePacked(account, amount, r));
+        require(MerkleProof.verify(merkleProof, s_merkleRoot, leaf), MerkleDistributor__BadProof());
+
+        s_claimedV2[r][account] = true;
+
+        require(i_token.transfer(account, amount), MerkleDistributor__TransferFailed());
+        emit Claimed(r, account, amount);
+    }
+
+    /// Optional view to help frontends/backends
+    function isClaimedV2(uint64 r, address account) external view returns (bool) {
+        return s_claimedV2[r][account];
     }
 }

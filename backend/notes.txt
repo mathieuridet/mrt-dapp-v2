@@ -36,3 +36,6 @@ Solidity Contract Layout:
 
 //  MRTNFTokenV1: 0x69f978F1A444E876F2f724896cA9525dB396B7fE
 //  Proxy: 0x47EC23730C46F24578266888f9E4a8c41128E782
+
+
+How to update ABI and store it directly in /frontend/abi ?

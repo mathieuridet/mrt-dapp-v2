@@ -257,8 +257,8 @@ async function rebuildSingleChain(opts: RebuildOptions = {}): Promise<RebuildBat
     onchainRound = (await dist.s_round()) as bigint;
     console.log("[dist] s_round ->", onchainRound?.toString());
 
-    onchainReward = (await dist.i_rewardAmount()) as bigint;
-    console.log("[dist] i_rewardAmount ->", onchainReward?.toString());
+    onchainReward = (await dist.rewardAmount()) as bigint;
+    console.log("[dist] rewardAmount ->", onchainReward?.toString());
   } catch (err) {
     console.error("Error reading distributor state", { distributorAddress, err });
     throw err;
