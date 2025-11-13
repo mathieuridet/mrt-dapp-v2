@@ -79,29 +79,89 @@ function errorMessage(e: unknown): string {
   }
 }
 
+type RawRpcLog = {
+  address: `0x${string}`;
+  blockHash?: `0x${string}`;
+  blockNumber: `0x${string}` | number | bigint;
+  data: `0x${string}`;
+  logIndex?: `0x${string}` | number | bigint;
+  removed?: boolean;
+  topics: `0x${string}`[];
+  transactionHash: `0x${string}`;
+  transactionIndex?: `0x${string}` | number | bigint;
+};
+
+function toHexBlock(n: number) {
+  return `0x${n.toString(16)}`;
+}
+
+function looksLikeAlchemy(url: string) {
+  return /alchemy\.com\/v2\//.test(url);
+}
+
+/**
+ * Fetch logs in block chunks, respecting provider limits (e.g. Alchemy Free ≤10 blocks).
+ * - maxRangeBlocks: upper cap per request. For Alchemy Free we start at 10; otherwise 10_000.
+ * - If provider rejects with a “10 block range” error, we auto-retry that chunk with size 10.
+ */
 async function getLogsInChunks(
   provider: JsonRpcProvider,
+  rpcUrl: string,
   address: string,
   fromBlock: number,
   toBlock: number,
-  topics: string[]
-) {
-  const logs: ethers.Log[] = [];
-  const CHUNK_SIZE = 10_000; // larger chunk for fewer RPC roundtrips; tune as needed
-  for (let start = fromBlock; start <= toBlock; start += CHUNK_SIZE) {
-    const end = Math.min(start + CHUNK_SIZE - 1, toBlock);
-    // 🔎 LOG: chunk window
-    console.log("[logs] chunk", { from: start, to: end });
-    const chunkLogs = await provider.send("eth_getLogs", [
-      {
-        address,
-        fromBlock: `0x${start.toString(16)}`,
-        toBlock: `0x${end.toString(16)}`,
-        topics,
-      },
-    ]);
-    console.log("[logs] fetched", chunkLogs.length);
-    logs.push(...chunkLogs);
+  topics: string[],
+  maxRangeBlocks?: number
+): Promise<RawRpcLog[]> {
+  const logs: RawRpcLog[] = [];
+
+  // default chunk size heuristics
+  const defaultCap = looksLikeAlchemy(rpcUrl) ? 10 : 10_000;
+  let cap = Math.max(1, Math.min(maxRangeBlocks ?? defaultCap, defaultCap));
+
+  for (let start = fromBlock; start <= toBlock; start += cap) {
+    let end = Math.min(start + cap - 1, toBlock);
+
+    // try this chunk; on failure due to provider range, drop to 10 and retry
+    let done = false;
+    while (!done) {
+      console.log("[logs] chunk", { from: start, to: end, cap });
+      try {
+        const chunkLogs = (await provider.send("eth_getLogs", [
+          {
+            address,
+            fromBlock: toHexBlock(start),
+            toBlock: toHexBlock(end),
+            topics,
+          },
+        ])) as RawRpcLog[];
+        console.log("[logs] fetched", chunkLogs.length);
+        logs.push(...chunkLogs);
+        done = true;
+      } catch (e) {
+        const msg = (e as Error).message || String(e);
+        // Alchemy Free specific hint
+        if (/10 block range/i.test(msg) || /10\s*block\s*range/i.test(msg)) {
+          if (cap === 10) {
+            console.warn("[logs] already at cap=10 but still failing; rethrowing");
+            throw e;
+          }
+          console.warn("[logs] provider requires ≤10-block chunks; reducing cap → 10");
+          cap = 10;
+          end = Math.min(start + cap - 1, toBlock);
+          continue; // retry same start..end with smaller cap
+        }
+        // Generic: if cap > 10, try a smaller cap as a fallback
+        if (cap > 10) {
+          cap = Math.max(10, Math.floor(cap / 2));
+          end = Math.min(start + cap - 1, toBlock);
+          console.warn("[logs] generic range error; lowering cap →", cap);
+          continue;
+        }
+        // Give up
+        throw e;
+      }
+    }
   }
   return logs;
 }
@@ -226,7 +286,15 @@ async function rebuildSingleChain(opts: RebuildOptions = {}): Promise<RebuildBat
   console.log("[builder] toTs     ", Number(toHeader?.timestamp ?? 0));
   console.log("[builder] nftAddress", nftAddress);
 
-  const logs = await getLogsInChunks(provider, nftAddress, fromBlock, toBlock, [TRANSFER_SIG, ZERO32]);
+  const logs = await getLogsInChunks(
+    provider,
+    rpcUrl,                                // pass rpcUrl so we can detect Alchemy
+    nftAddress,
+    fromBlock,
+    toBlock,
+    [TRANSFER_SIG, ZERO32],                // mints: Transfer + from=0x0
+    Number(process.env.LOGS_CHUNK_BLOCKS || 0) || undefined // optional override
+  );
   console.log("[builder] logs.length", logs.length);
   if (logs.length) {
     const peek = logs[0];
