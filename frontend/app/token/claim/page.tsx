@@ -50,7 +50,7 @@ const erc20Abi = [
 ] as const;
 
 const erc20AbiTyped = erc20Abi as unknown as Abi;
-const distributorAbi = DistributorAbi as unknown as Abi;
+const distributorAbi = DistributorAbi.abi as unknown as Abi;
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
 
 export default function ClaimPage() {
@@ -130,9 +130,6 @@ export default function ClaimPage() {
 
   const tokenDecimals = decimals != null ? Number(decimals) : 18;
   const pretty = entry ? fmtAmount(entry.amount, tokenDecimals) : null;
-  console.log(entry?.amount)
-console.log( "pretty", pretty);
-
         
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: waiting, isSuccess } = useWaitForTransactionReceipt({ hash });
@@ -145,6 +142,7 @@ console.log( "pretty", pretty);
     console.log("[claim] root(file) :", proofs.root);
     console.log("[claim] root(chain):", onchainRoot as string);
     console.log("[claim] entry      :", { ...entry, proofLen: entry.proof.length });
+    console.log("[claim] round      :", BigInt(proofs.round));
 
     if (!/^0x[0-9a-fA-F]{64}$/.test(proofs.root)) console.error("[claim] Bad root hex");
     if (!entry.proof.every(p => /^0x[0-9a-fA-F]{64}$/.test(p))) console.error("[claim] Bad proof element");
@@ -154,6 +152,7 @@ console.log( "pretty", pretty);
       abi: distributorAbi,
       functionName: "claimV2",
       args: [BigInt(proofs.round), address as `0x${string}`, entry.proof] as const,
+      gas: BigInt(500_000), // plenty for a simple ERC20 transfer + merkle verify
     });
   }
 

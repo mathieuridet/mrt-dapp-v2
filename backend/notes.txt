@@ -29,6 +29,8 @@ Solidity Contract Layout:
 //  Proxy: 0x97035F4d00C5998a4f08d753c6d00b3a6BFcdCD3
 
 //  MerkleDistributorV1: 0x87c9e67A78210b8A81B348eD72A41F9417ae30f5
+//  MerkleDistributorV2: 0xeef159fbe774a41264a363daf54f192f4329b425
+//  MerkleDistributorV2: 0xCD229bBe6bc7bf556808AB82B0189cE143fe5F1C
 //  Proxy: 0xB1189B60C224AD88C3d6330FdF39be866dE2D484
 
 //  StakingVaultV1: 0xba965016ee6d7BfFD482bbABF48E05d3e0ddD6e9
@@ -39,3 +41,7 @@ Solidity Contract Layout:
 
 
 How to update ABI and store it directly in /frontend/abi ?
+
+How to deploy a new impl ?
+export DISTRIBUTOR_PROXY_ADDRESS=0xB1189B60C224AD88C3d6330FdF39be866dE2D484
+forge script script/UpgradeMerkleDistributor.s.sol:UpgradeScript --sig "run(0xB1189B60C224AD88C3d6330FdF39be866dE2D484)" --rpc-url $ETH_SEPOLIA_RPC_URL --private-key $PRIVATE_KEY --broadcast -vvvv

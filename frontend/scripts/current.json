@@ -1,0 +1,11 @@
+{
+  "round": 489740,
+  "root": "0x8c0404531b1f2a792bac378b10b3ff2f473365e790ac9aadf9f7829d97917add",
+  "claims": [
+    {
+      "account": "0xbd187E110DBFc7Fdf9cCaF42786015b4160Ae3f2",
+      "amount": "5000000000000000000",
+      "proof": []
+    }
+  ]
+}
